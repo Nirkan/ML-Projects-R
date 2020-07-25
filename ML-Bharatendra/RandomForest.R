@@ -1,0 +1,104 @@
+
+# Read Data
+
+data <- read.csv("CTG.csv", header = TRUE)
+
+str(data)
+
+data$NSP <- as.factor(data$NSP)
+
+table(data$NSP)
+
+
+# Data Partition
+
+set.seed(123)
+
+ind <- sample(2, nrow(data), replace = TRUE, prob = c(0.7,0.3))
+
+train <- data[ind == 1, ]
+
+test <- data[ind == 2, ]
+
+
+# Random Forest
+
+library(randomForest)
+
+set.seed(222)
+
+rf <- randomForest(NSP~., data = train,
+                   ntree = 300,
+                   mtry = 8,
+                   importance = TRUE,
+                   proximity = TRUE)
+
+print(rf)
+
+attributes(rf)
+
+
+
+# Prediction and Confusion - train
+
+library(caret)
+
+p1 <- predict(rf, train)
+
+confusionMatrix(p1, train$NSP)
+
+
+# Prediction and Confusion - test
+
+p2 <- predict(rf, test)
+
+confusionMatrix(p2, test$NSP)
+
+
+
+# Error Rate
+
+plot(rf)
+
+
+# Tune mtry
+
+t <-tuneRF(train[,-22], train[,22],
+       stepFactor = 0.5,
+       plot = TRUE,
+       ntreeTry = 300,
+       trace = TRUE,
+       improve = 0.05 )
+
+
+# Number of nodes for the tree
+
+hist(treesize(rf),
+     main = "Number of Nodes of the Trees",
+     col = 'darkgreen')
+
+
+
+# Variable Importance
+
+varImpPlot(rf,
+           ssort = T,
+           n.var = 10,
+           main = "Top 10 - Variable Importance")
+
+
+
+# Partial Dependence Plot
+
+partialPlot(rf, train, ASTV, "3")
+
+
+
+# Extract Single Tree
+
+getTree(rf, 1, labelVar = TRUE)
+
+
+# Multi-dimensional Scaling Plot of Proximity Matrix
+
+MDSplot(rf, train$NSP)
